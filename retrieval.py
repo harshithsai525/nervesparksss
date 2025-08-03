@@ -6,13 +6,14 @@ from langchain_groq import ChatGroq
 from langchain_core.documents import Document
 from typing import List, Dict, Any
 import os
+import tempfile
 
 class LegalRetriever:
     def __init__(self):
         self.embedding_model = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
-            model_kwargs={'device': 'cpu'},
-            encode_kwargs={'normalize_embeddings': False}
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": False}
         )
         self.vector_db = None
         self.qa_chain = None
@@ -31,17 +32,18 @@ class LegalRetriever:
 
     def create_vector_db(self, documents: List[Document]) -> None:
         if not documents:
-            raise ValueError("No documents provided.")
+            raise ValueError("No documents provided")
 
-        # ✅ In-memory vector DB, bypassing SQLite
+        # ✅ Use in-memory DuckDB instead of SQLite (no persist_directory)
+        temp_dir = tempfile.mkdtemp()  # Temporary in-memory DB
         self.vector_db = Chroma.from_documents(
             documents=documents,
             embedding=self.embedding_model,
             collection_name="legal_temp",
-            persist_directory=None,
+            persist_directory=temp_dir,  # used only to isolate from SQLite default
             client_settings={
                 "chroma_db_impl": "duckdb+parquet",
-                "persist_directory": None
+                "persist_directory": temp_dir
             }
         )
 
@@ -72,10 +74,10 @@ class LegalRetriever:
     def query(self, question: str) -> Dict[str, Any]:
         if not question.strip():
             raise ValueError("Question cannot be empty.")
-        
+
         if not self.vector_db:
             raise RuntimeError("No documents loaded. Upload a PDF and initialize the vector DB.")
-        
+
         if not self.qa_chain:
             self._initialize_qa_chain()
 
