@@ -33,10 +33,16 @@ class LegalRetriever:
         if not documents:
             raise ValueError("No documents provided.")
 
-        # ✅ In-memory Chroma (no persistence)
+        # ✅ In-memory vector DB, bypassing SQLite
         self.vector_db = Chroma.from_documents(
             documents=documents,
-            embedding=self.embedding_model
+            embedding=self.embedding_model,
+            collection_name="legal_temp",
+            persist_directory=None,
+            client_settings={
+                "chroma_db_impl": "duckdb+parquet",
+                "persist_directory": None
+            }
         )
 
         self._initialize_qa_chain()
