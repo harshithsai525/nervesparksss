@@ -1,0 +1,9 @@
+numpy==1.26.4
+langchain
+langchain-community
+langchain-groq
+chromadb==0.4.22
+sentence-transformers
+pypdf
+python-dotenv
+streamlit
